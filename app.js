@@ -2,31 +2,42 @@ const express = require('express');
 const { connectToDb, getDb } = require('./db');
 
 const app = express();
-
 app.use(express.json());
 
 let db;
+
+// Connect to MongoDB
 connectToDb((err) => {
     if (!err) {
         db = getDb();
+        const PORT = 3000;
+        const HOST = '0.0.0.0';
+        app.listen(PORT, HOST, () => {
+            console.log(`Server running on http://${HOST}:${PORT}`);
+        });
+    } else {
+        console.error('Failed to connect to the database:', err);
     }
 });
 
+// Routes
+
+// Fetch all cards
 app.get('/cards', (req, res) => {
     let cards = [];
     db.collection('cards')
         .find()
-        .forEach((card) => {
-            cards.push(card);
-        })
-        .then(() => {
-            res.status(200).json(cards);
+        .toArray()
+        .then((result) => {
+            res.status(200).json(result);
         })
         .catch((err) => {
+            console.error('Error fetching documents:', err);
             res.status(500).json({ error: 'Could not fetch the documents' });
         });
 });
 
+// Process payment
 app.post('/api/process_payment', async (req, res) => {
     const { card_uid, amount } = req.body;
 
@@ -55,6 +66,7 @@ app.post('/api/process_payment', async (req, res) => {
             res.status(400).json({ success: false, message: "Insufficient balance" });
         }
     } catch (error) {
+        console.error('Error processing payment:', error);
         res.status(500).json({
             success: false,
             message: "Internal server error"
@@ -62,14 +74,17 @@ app.post('/api/process_payment', async (req, res) => {
     }
 });
 
+// Add a new card
 app.post('/cards', (req, res) => {
     const card = req.body;
+
     db.collection('cards')
         .insertOne(card)
         .then((result) => {
             res.status(201).json(result);
         })
-        .catch(() => {
-            res.status(500).json({ err: 'Could not create a new doc' });
+        .catch((err) => {
+            console.error('Error inserting document:', err);
+            res.status(500).json({ err: 'Could not create a new document' });
         });
 });
