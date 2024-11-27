@@ -1,53 +1,46 @@
 const express = require('express');
-const app = express();
 const { connectToDb, getDb } = require('./db');
 
-// Middleware to parse JSON bodies
+const app = express();
+
 app.use(express.json());
 
 let db;
 connectToDb((err) => {
     if (!err) {
-        app.listen(3000, '0.0.0.0', () => {
-            console.log('Server running on http://192.168.1.40:3000');
-        });
         db = getDb();
     }
 });
 
 app.get('/cards', (req, res) => {
     let cards = [];
-
     db.collection('cards')
-        .find() // Get all documents from the collection
+        .find()
         .forEach((card) => {
-            cards.push(card); // Push each card into the array
+            cards.push(card);
         })
         .then(() => {
-            res.status(200).json(cards); // Respond with the collected array
+            res.status(200).json(cards);
         })
         .catch((err) => {
-            console.error('Error fetching documents:', err);
             res.status(500).json({ error: 'Could not fetch the documents' });
         });
 });
 
-// Payment route
 app.post('/api/process_payment', async (req, res) => {
-    const { card_uid, amount } = req.body; // Extract card UID and amount from request body
+    const { card_uid, amount } = req.body;
 
     if (!card_uid || !amount) {
         return res.status(400).json({ success: false, message: 'Missing card_uid or amount' });
     }
 
     try {
-        const card = await db.collection('cards').findOne({ card_uid }); // Find the card
+        const card = await db.collection('cards').findOne({ card_uid });
         if (!card) {
             return res.status(404).json({ success: false, message: "Card not found" });
         }
 
         if (card.balance >= amount) {
-            // Deduct the amount from the balance
             await db.collection('cards').updateOne(
                 { card_uid },
                 { $inc: { balance: -amount } }
@@ -59,13 +52,9 @@ app.post('/api/process_payment', async (req, res) => {
                 new_balance: card.balance - amount
             });
         } else {
-            res.status(400).json({
-                success: false,
-                message: "Insufficient balance"
-            });
+            res.status(400).json({ success: false, message: "Insufficient balance" });
         }
     } catch (error) {
-        console.error("Error processing payment:", error);
         res.status(500).json({
             success: false,
             message: "Internal server error"
@@ -74,14 +63,13 @@ app.post('/api/process_payment', async (req, res) => {
 });
 
 app.post('/cards', (req, res) => {
-    const card = req.body
-
+    const card = req.body;
     db.collection('cards')
-    .insertOne(card)
-    .then(result => {
-        res.status(201).json(result)
-    })
-    .catch(err => {
-        res.status(500).json({err : 'could not creat a new doc'})
-    })
-})
+        .insertOne(card)
+        .then((result) => {
+            res.status(201).json(result);
+        })
+        .catch(() => {
+            res.status(500).json({ err: 'Could not create a new doc' });
+        });
+});
