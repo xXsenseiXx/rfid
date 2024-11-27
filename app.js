@@ -72,3 +72,16 @@ app.post('/api/process_payment', async (req, res) => {
         });
     }
 });
+
+app.post('/cards', (req, res) => {
+    const card = req.body
+
+    db.collection('cards')
+    .insertOne(card)
+    .then(result => {
+        res.status(201).json(result)
+    })
+    .catch(err => {
+        res.status(500).json({err : 'could not creat a new doc'})
+    })
+})
