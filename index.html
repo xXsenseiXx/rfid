@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cards Table</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 18px;
+            text-align: left;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cards Information</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Card UID</th>
+                <th>Name</th>
+                <th>Balance</th>
+                <th>Transactions</th>
+            </tr>
+        </thead>
+        <tbody id="cards-data">
+            <!-- Data will be dynamically inserted here -->
+        </tbody>
+    </table>
+    <script>
+        async function fetchData() {
+            try {
+                const response = await fetch('https://your-server-url/cards'); // Replace with your endpoint
+                const cards = await response.json();
+
+                const tableBody = document.getElementById('cards-data');
+                cards.forEach(card => {
+                    const row = document.createElement('tr');
+                    
+                    // Create table cells
+                    const cardUidCell = document.createElement('td');
+                    cardUidCell.textContent = card.card_uid;
+
+                    const nameCell = document.createElement('td');
+                    nameCell.textContent = card.name;
+
+                    const balanceCell = document.createElement('td');
+                    balanceCell.textContent = card.balance;
+
+                    const transactionsCell = document.createElement('td');
+                    transactionsCell.innerHTML = card.transactions
+                        ? card.transactions.map(tx => 
+                            `<div>
+                                Time: ${new Date(tx.time).toLocaleString()}<br>
+                                Receiver: ${tx.receiver}<br>
+                                Value: ${tx.value}
+                            </div><hr>`).join('')
+                        : 'No Transactions';
+
+                    // Append cells to row
+                    row.appendChild(cardUidCell);
+                    row.appendChild(nameCell);
+                    row.appendChild(balanceCell);
+                    row.appendChild(transactionsCell);
+
+                    // Append row to table body
+                    tableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error fetching cards data:', error);
+            }
+        }
+
+        // Fetch data when the page loads
+        fetchData();
+    </script>
+</body>
+</html>
