@@ -96,3 +96,6 @@ app.post('/cards', (req, res) => {
             res.status(500).json({ err: 'Could not create a new document' });
         });
 });
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
