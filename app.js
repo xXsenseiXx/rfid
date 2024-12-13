@@ -54,7 +54,15 @@ app.post('/api/process_payment', async (req, res) => {
         if (card.balance >= amount) {
             await db.collection('cards').updateOne(
                 { card_uid },
-                { $inc: { balance: -amount } }
+                { $inc: { balance: -amount } ,
+                    $push: {
+                        transactions: {
+                            time: new Date(), // Add the current timestamp
+                            receiver: "Store", // Replace with actual receiver data
+                            value: amount // Add the transaction value
+                        }
+                    }
+                }  
             );
 
             res.json({
