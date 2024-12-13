@@ -1,6 +1,5 @@
 const express = require('express');
 const { connectToDb, getDb } = require('./db');
-const path = require('path'); // To serve static files
 
 const app = express();
 app.use(express.json());
@@ -10,7 +9,7 @@ let db;
 // Connect to MongoDB
 connectToDb((err) => {
     if (!err) {
-        db = getDb(); 
+        db = getDb();
         const PORT = 3000;
         const HOST = '0.0.0.0';
         app.listen(PORT, HOST, () => {
@@ -21,16 +20,87 @@ connectToDb((err) => {
     }
 });
 
-app.use((req, res, next) => {
-    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live;");
-    next();
-});
-// Serve static files (like your HTML)
-app.use(express.static(path.join(__dirname, 'public'))); // Make sure the 'public' folder contains index.html
+// Routes
 
-// Default route to serve the HTML file
+// Default route to display cards in a table
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));  // Ensure correct path to HTML
+    db.collection('cards')
+        .find()
+        .toArray()
+        .then((cards) => {
+            let html = `
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Cards</title>
+                    <style>
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin: 20px 0;
+                            font-size: 1em;
+                            text-align: left;
+                        }
+                        table th, table td {
+                            padding: 12px;
+                            border: 1px solid #ddd;
+                        }
+                        table th {
+                            background-color: #f4f4f4;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>Cards Table</h1>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Card UID</th>
+                                <th>Name</th>
+                                <th>Balance</th>
+                                <th>Transactions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            cards.forEach((card) => {
+                html += `
+                    <tr>
+                        <td>${card._id}</td>
+                        <td>${card.card_uid}</td>
+                        <td>${card.name}</td>
+                        <td>${card.balance}</td>
+                        <td>
+                            <ul>
+                                ${card.transactions
+                                    .map(
+                                        (t) =>
+                                            `<li>${t.time} - ${t.receiver} - $${t.value}</li>`
+                                    )
+                                    .join('')}
+                            </ul>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+
+            res.send(html);
+        })
+        .catch((err) => {
+            console.error('Error fetching documents:', err);
+            res.status(500).send('Internal Server Error');
+        });
 });
 
 // Fetch all cards
@@ -39,7 +109,7 @@ app.get('/cards', (req, res) => {
         .find()
         .toArray()
         .then((result) => {
-            res.status(200).json(result);  // Return JSON data to the frontend
+            res.status(200).json(result);
         })
         .catch((err) => {
             console.error('Error fetching documents:', err);
@@ -47,7 +117,7 @@ app.get('/cards', (req, res) => {
         });
 });
 
-// Process payment route (as you have already defined in your original code)
+// Process payment
 app.post('/api/process_payment', async (req, res) => {
     const { card_uid, amount } = req.body;
 
@@ -64,7 +134,8 @@ app.post('/api/process_payment', async (req, res) => {
         if (card.balance >= amount) {
             await db.collection('cards').updateOne(
                 { card_uid },
-                { $inc: { balance: -amount },
+                {
+                    $inc: { balance: -amount },
                     $push: {
                         transactions: {
                             time: new Date(), // Add the current timestamp
@@ -92,7 +163,7 @@ app.post('/api/process_payment', async (req, res) => {
     }
 });
 
-// Add a new card route
+// Add a new card
 app.post('/cards', (req, res) => {
     const card = req.body;
 
