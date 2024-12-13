@@ -21,6 +21,10 @@ connectToDb((err) => {
     }
 });
 
+app.use((req, res, next) => {
+    res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://vercel.live;");
+    next();
+});
 // Serve static files (like your HTML)
 app.use(express.static(path.join(__dirname, 'public'))); // Make sure the 'public' folder contains index.html
 
