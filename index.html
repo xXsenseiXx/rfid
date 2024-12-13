@@ -39,7 +39,7 @@
     <script>
         async function fetchData() {
             try {
-                const response = await fetch('https://your-server-url/cards'); // Replace with your endpoint
+                const response = await fetch('/cards');  // Fetch from /cards endpoint
                 const cards = await response.json();
 
                 const tableBody = document.getElementById('cards-data');
@@ -63,7 +63,7 @@
                                 Time: ${new Date(tx.time).toLocaleString()}<br>
                                 Receiver: ${tx.receiver}<br>
                                 Value: ${tx.value}
-                            </div><hr>`).join('')
+                            </div><hr>`).join('') 
                         : 'No Transactions';
 
                     // Append cells to row
@@ -80,8 +80,7 @@
             }
         }
 
-        // Fetch data when the page loads
-        fetchData();
+        fetchData(); // Fetch data when the page loads
     </script>
 </body>
 </html>

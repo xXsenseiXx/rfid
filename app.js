@@ -1,5 +1,6 @@
 const express = require('express');
 const { connectToDb, getDb } = require('./db');
+const path = require('path'); // To serve static files
 
 const app = express();
 app.use(express.json());
@@ -9,7 +10,7 @@ let db;
 // Connect to MongoDB
 connectToDb((err) => {
     if (!err) {
-        db = getDb();
+        db = getDb(); 
         const PORT = 3000;
         const HOST = '0.0.0.0';
         app.listen(PORT, HOST, () => {
@@ -20,16 +21,21 @@ connectToDb((err) => {
     }
 });
 
-// Routes
+// Serve static files (like your HTML)
+app.use(express.static(path.join(__dirname, 'public'))); // Make sure the 'public' folder contains index.html
+
+// Default route to serve the HTML file
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));  // Ensure correct path to HTML
+});
 
 // Fetch all cards
 app.get('/cards', (req, res) => {
-    let cards = [];
     db.collection('cards')
         .find()
         .toArray()
         .then((result) => {
-            res.status(200).json(result);
+            res.status(200).json(result);  // Return JSON data to the frontend
         })
         .catch((err) => {
             console.error('Error fetching documents:', err);
@@ -37,7 +43,7 @@ app.get('/cards', (req, res) => {
         });
 });
 
-// Process payment
+// Process payment route (as you have already defined in your original code)
 app.post('/api/process_payment', async (req, res) => {
     const { card_uid, amount } = req.body;
 
@@ -54,7 +60,7 @@ app.post('/api/process_payment', async (req, res) => {
         if (card.balance >= amount) {
             await db.collection('cards').updateOne(
                 { card_uid },
-                { $inc: { balance: -amount } ,
+                { $inc: { balance: -amount },
                     $push: {
                         transactions: {
                             time: new Date(), // Add the current timestamp
@@ -62,7 +68,7 @@ app.post('/api/process_payment', async (req, res) => {
                             value: amount // Add the transaction value
                         }
                     }
-                }  
+                }
             );
 
             res.json({
@@ -82,7 +88,7 @@ app.post('/api/process_payment', async (req, res) => {
     }
 });
 
-// Add a new card
+// Add a new card route
 app.post('/cards', (req, res) => {
     const card = req.body;
 
@@ -95,7 +101,4 @@ app.post('/cards', (req, res) => {
             console.error('Error inserting document:', err);
             res.status(500).json({ err: 'Could not create a new document' });
         });
-});
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
